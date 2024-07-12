@@ -1113,7 +1113,6 @@ dependencies = [
  "actix-web",
  "regex",
  "serde",
- "serde_json",
  "serde_test",
  "serde_with",
  "time",

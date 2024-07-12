@@ -7,8 +7,9 @@ pub use process::process_receipt;
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{body, http::header::ContentType, test, web::Data, App};
-    use serde::Deserialize;
+    use actix_web::{http::header::ContentType, test, web::Data, App};
+
+    use uuid::Uuid;
 
     use crate::{
         db::Connection,
@@ -36,23 +37,13 @@ mod tests {
             .insert_header(ContentType::json())
             .set_payload(receipt_json)
             .to_request();
-        let process_resp = test::call_service(&app, process_req).await;
-        assert!(process_resp.status().is_success());
-
-        let process_body = body::to_bytes(process_resp.into_body()).await.unwrap();
-        let mut deserializer = serde_json::Deserializer::from_slice(&process_body);
-        let ProcessReceiptResponse { id } = Deserialize::deserialize(&mut deserializer).unwrap();
+        let ProcessReceiptResponse { id } = test::call_and_read_body_json(&app, process_req).await;
 
         // get its points
         let points_req = test::TestRequest::get()
             .uri(&format!("/receipts/{id}/points"))
             .to_request();
-        let points_resp = test::call_service(&app, points_req).await;
-        assert!(points_resp.status().is_success());
-
-        let points_body = body::to_bytes(points_resp.into_body()).await.unwrap();
-        let mut deserializer = serde_json::Deserializer::from_slice(&points_body);
-        let PointsResponse { points } = Deserialize::deserialize(&mut deserializer).unwrap();
+        let PointsResponse { points } = test::call_and_read_body_json(&app, points_req).await;
         assert_eq!(points, expected_pts);
     }
 
@@ -136,5 +127,55 @@ mod tests {
             109,
         )
         .await;
+    }
+
+    #[actix_web::test]
+    async fn not_found() {
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(AppState {
+                    connection: Connection::new(),
+                }))
+                .service(get_points),
+        )
+        .await;
+
+        let id = Uuid::new_v4();
+        let req = test::TestRequest::get()
+            .uri(&format!("/receipts/{id}/points"))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
+    }
+
+    #[actix_web::test]
+    async fn bad_receipt() {
+        let request_json: &[u8] = br#"
+            {
+                "retailer": "Target!",
+                "purchaseDate": "2022-01-02",
+                "purchaseTime": "13:13",
+                "total": "1.25",
+                "items": [
+                    { "shortDescription": "Pepsi - 12-oz", "price": "1.25" }
+                ]
+            }
+        "#;
+
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(AppState {
+                    connection: Connection::new(),
+                }))
+                .service(process_receipt),
+        )
+        .await;
+        let req = test::TestRequest::post()
+            .uri("/receipts/process")
+            .append_header(ContentType::json())
+            .set_payload(request_json)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
     }
 }
