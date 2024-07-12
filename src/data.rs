@@ -22,6 +22,7 @@ pub struct Price {
 pub struct Item {
     /// The short product description for the item.
     pub short_description: String,
+
     /// The total price paid for this item.
     pub price: Price,
 }
@@ -41,12 +42,21 @@ impl Item {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Receipt {
+    /// The name of the retailer or store the receipt is from.
     pub retailer: String,
+
+    /// The date of the purchase printed on the receipt.
     #[serde(with = "serialization::date")]
     pub purchase_date: Date,
+
+    /// The time of the purchase printed on the receipt. 24-hour time expected.
     #[serde(with = "serialization::time")]
     pub purchase_time: Time,
+
+    /// The items on the receipt.
     pub items: Vec<Item>,
+
+    /// The total amount paid on the receipt.
     pub total: Price,
 }
 

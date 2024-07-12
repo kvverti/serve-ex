@@ -7,6 +7,7 @@ mod data;
 mod db;
 mod routes;
 
+/// State for this application. Holds a handle to the "database connection".
 #[derive(Debug)]
 struct AppState {
     connection: Connection,
@@ -16,6 +17,9 @@ struct AppState {
 async fn main() -> io::Result<()> {
     // for simplicity, we'll create a "connection" to our "database" here
     let db_conn = Connection::new();
+
+    // construct and run a basic HTTP server with our endpoints
+    // you'll need to have localhost:8080 available
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {

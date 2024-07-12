@@ -60,11 +60,13 @@ fn calculate_points(receipt: &Receipt) -> u64 {
     total_pts.0
 }
 
+/// Response sent by the points service.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct PointsResponse {
     pub points: u64,
 }
 
+/// Compute and get points for the given receipt.
 #[get("/receipts/{id}/points")]
 pub async fn get_points(path: web::Path<Uuid>, data: web::Data<AppState>) -> HttpResponse {
     let id = path.into_inner();

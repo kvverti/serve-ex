@@ -18,6 +18,7 @@ mod tests {
 
     use super::*;
 
+    /// Takes data for a receipt, sends it to the server, and gets the points total for that receipt.
     async fn run_full_trip(receipt_json: &'static [u8], expected_pts: u64) {
         let app = test::init_service(
             App::new()
